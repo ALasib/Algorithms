@@ -1,81 +1,126 @@
+
 #include<bits/stdc++.h>
 
-//RA[i]=rank of suffix started from ith index.
-//SA[i]=starting index of ith suffix.
-//LCP[i]=LCP between ith and (i-1)th suffix.
-
+//SA[i]=rank of suffix started from ith index.
+//iSA[i]=starting index of ith suffix.
+//lcp[i]=LCP between ith and (i-1)th suffix.
 using namespace std;
-#define MAX_N 200010                         // second approach: O(n log n)
-char T[MAX_N];                   // the input string, up to 100K characters
-int n;                                        // the length of input string
-int RA[MAX_N], tempRA[MAX_N];        // rank array and temporary rank array
-int SA[MAX_N], tempSA[MAX_N];    // suffix array and temporary suffix array
-int c[MAX_N];                                    // for counting/radix sort
 
+// Begins Suffix Arrays implementation
+// O(n log n) - Manber and Myers algorithm
+// Refer to "Suffix arrays: A new method for on-line txting searches",
+// by Udi Manber and Gene Myers
 
-int Phi[MAX_N];                      // for computing longest common prefix
-int PLCP[MAX_N];
-int LCP[MAX_N];  // LCP[i] stores the LCP between previous suffix T+SA[i-1]
-                                              // and current suffix T+SA[i]
+//Usage:
+// Fill txt with the characters of the txting.
+// Call SuffixSort(n), where n is the length of the txting stored in txt.
+// That's it!
 
-//bool cmp(int a, int b) { return strcmp(T + a, T + b) < 0; }      // compare
+//Output:
+// SA = The suffix array. Contains the n suffixes of txt sorted in lexicographical order.
+//       Each suffix is represented as a single integer (the SAition of txt where it starts).
+// iSA = The inverse of the suffix array. iSA[i] = the index of the suffix txt[i..n)
+//        in the SA array. (In other words, SA[i] = k <==> iSA[k] = i)
+//        With this array, you can compare two suffixes in O(1): Suffix txt[i..n) is smaller
+//        than txt[j..n) if and only if iSA[i] < iSA[j]
+const int MAX = 100010;
+char txt[MAX]; //input
+int iSA[MAX], SA[MAX]; //output
+int cnt[MAX], nxt[MAX]; //internal
+bool bh[MAX], b2h[MAX];
 
+// Compares two suffixes according to their first characters
+bool smaller_first_char(int a, int b){
+  return txt[a] < txt[b];
+}
 
-
-void countingSort(int k) {                                          // O(n)
-  int i, sum, maxi = max(300,n);   // up to 255 ASCII chars or length of n
-  memset(c, 0, sizeof c);                          // clear frequency table
-  for (i = 0; i < n; i++)       // count the frequency of each integer rank
-    c[i + k < n ? RA[i + k] : 0]++;
-  for (i = sum = 0; i < maxi; i++) {
-    int t = c[i]; c[i] = sum; sum += t;
+void suffixSort(int n){
+  //sort suffixes according to their first characters
+  for (int i=0; i<n; ++i){
+    SA[i] = i;
   }
-  for (i = 0; i < n; i++)          // shuffle the suffix array if necessary
-    tempSA[c[SA[i]+k < n ? RA[SA[i]+k] : 0]++] = SA[i];
-  for (i = 0; i < n; i++)                     // update the suffix array SA
-    SA[i] = tempSA[i];
-}
+  sort(SA, SA + n, smaller_first_char);
+  //{SA contains the list of suffixes sorted by their first character}
 
-void constructSA() {         // this version can go up to 100000 characters
-  int i, k, r;
-  for (i = 0; i < n; i++) RA[i] = T[i];                 // initial rankings
-  for (i = 0; i < n; i++) SA[i] = i;     // initial SA: {0, 1, 2, ..., n-1}
-  for (k = 1; k < n; k <<= 1) {       // repeat sorting process log n times
-    countingSort(k);  // actually radix sort: sort based on the second item
-    countingSort(0);          // then (stable) sort based on the first item
-    tempRA[SA[0]] = r = 0;             // re-ranking; start from rank r = 0
-    for (i = 1; i < n; i++)                    // compare adjacent suffixes
-      tempRA[SA[i]] = // if same pair => same rank r; otherwise, increase r
-      (RA[SA[i]] == RA[SA[i-1]] && RA[SA[i]+k] == RA[SA[i-1]+k]) ? r : ++r;
-    for (i = 0; i < n; i++)                     // update the rank array RA
-      RA[i] = tempRA[i];
-    if (RA[SA[n-1]] == n-1) break;               // nice optimization trick
-}
-}
-
-void computeLCP() {
-  int i, L;
-  Phi[SA[0]] = -1;                                         // default value
-  for (i = 1; i < n; i++)                            // compute Phi in O(n)
-    Phi[SA[i]] = SA[i-1];    // remember which suffix is behind this suffix
-  for (i = L = 0; i < n; i++) {             // compute Permuted LCP in O(n)
-    if (Phi[i] == -1) { PLCP[i] = 0; continue; }            // special case
-    while (T[i + L] == T[Phi[i] + L]) L++;       // L increased max n times
-    PLCP[i] = L;
-    L = max(L-1, 0);                             // L decreased max n times
+  for (int i=0; i<n; ++i){
+    bh[i] = i == 0 || txt[SA[i]] != txt[SA[i-1]];
+    b2h[i] = false;
   }
-  for (i = 0; i < n; i++)                            // compute LCP in O(n)
-    LCP[i] = PLCP[SA[i]];   // put the permuted LCP to the correct position
-}
 
-int main()
+  for (int h = 1; h < n; h <<= 1){
+    //{bh[i] == false if the first h characters of SA[i-1] == the first h characters of SA[i]}
+    int buckets = 0;
+    for (int i=0, j; i < n; i = j){
+      j = i + 1;
+      while (j < n && !bh[j]) j++;
+      nxt[i] = j;
+      buckets++;
+    }
+    if (buckets == n) break; // We are done! Lucky bastards!
+    //{suffixes are separted in buckets containing txtings starting with the same h characters}
+
+    for (int i = 0; i < n; i = nxt[i]){
+      cnt[i] = 0;
+      for (int j = i; j < nxt[i]; ++j){
+        iSA[SA[j]] = i;
+      }
+    }
+
+    cnt[iSA[n - h]]++;
+    b2h[iSA[n - h]] = true;
+    for (int i = 0; i < n; i = nxt[i]){
+      for (int j = i; j < nxt[i]; ++j){
+        int s = SA[j] - h;
+        if (s >= 0){
+          int head = iSA[s];
+          iSA[s] = head + cnt[head]++;
+          b2h[iSA[s]] = true;
+        }
+      }
+      for (int j = i; j < nxt[i]; ++j){
+        int s = SA[j] - h;
+        if (s >= 0 && b2h[iSA[s]]){
+          for (int k = iSA[s]+1; !bh[k] && b2h[k]; k++) b2h[k] = false;
+        }
+      }
+    }
+    for (int i=0; i<n; ++i){
+      SA[iSA[i]] = i;
+      bh[i] |= b2h[i];
+    }
+  }
+  for (int i=0; i<n; ++i){
+    iSA[SA[i]] = i;
+  }
+}
+// End of suffix array algorithm
+
+
+// Begin of the O(n) longest common prefix algorithm
+// Refer to "Linear-Time Longest-Common-Prefix Computation in Suffix
+// Arrays and Its Applications" by Toru Kasai, Gunho Lee, Hiroki
+// Arimura, Setsuo Arikawa, and Kunsoo Park.
+int lcp[MAX];
+// lcp[i] = length of the longest common prefix of suffix SA[i] and suffix SA[i-1]
+// lcp[0] = 0
+void getlcp(int n)
 {
-    cin>>T;
-    n=strlen(T);
-    constructSA();
-    computeLCP();
-    for(int i=0;i<n;i++)
-    cout<<"SA:"<<SA[i]<<" RA:"<<RA[i]<<" LCP:"<<LCP[i]<<endl;
-    return 0;
+  for (int i=0; i<n; ++i)
+    iSA[SA[i]] = i;
 
+  lcp[0] = 0;
+
+  for (int i=0, h=0; i<n; ++i)
+  {
+    if (iSA[i] > 0)
+    {
+      int j = SA[iSA[i]-1];
+      while (i + h < n && j + h < n && txt[i+h] == txt[j+h])
+          h++;
+      lcp[iSA[i]] = h;
+
+      if (h > 0)
+        h--;
+    }
+  }
 }
