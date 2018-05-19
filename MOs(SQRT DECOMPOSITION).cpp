@@ -1,79 +1,78 @@
 #include<bits/stdc++.h>
-#define mx 10005
- 
+
 using namespace std;
-typedef long long LL;
-LL arr[mx],n,m,block,ans[mx];
- 
-struct query
-{
-    LL L,R,IND;
-    query(){}
-    query(LL _L,LL _R,LL _IND)
-    {
-        L=_L; R=_R; IND=_IND;
-    }
-};
- 
-vector<query>qur;
- 
-bool cmp(query x,query y)
-{
-    if(x.L/block != y.L/block)
-        return x.L/block < y.L/block;
-    return x.R < y.R;
+
+#define N 311111
+#define A 1111111
+#define BLOCK 555 // ~sqrt(N)
+
+int cnt[A], a[N], ans[N], answer = 0;
+
+struct node {
+	int L, R, i;
+}q[N];
+
+bool cmp(node x, node y) {
+	if(x.L/BLOCK != y.L/BLOCK) {
+		// different blocks, so sort by block.
+		return x.L/BLOCK < y.L/BLOCK;
+	}
+	// same block, so sort by R value
+	return x.R < y.R;
 }
- 
-void MO()
-{
-    block=(LL)sqrt(n);
-    sort(qur.begin(),qur.end(),cmp);
-    LL currL=0,currR=0;
-    LL sum=0;
- 
-    for(LL i=0;i<m;i++)
-    {
-        LL first=qur[i].L, last=qur[i].R;
- 
-        while(currL < first)
-        {
-            sum-=arr[currL];
-            currL++;
-        }
- 
-        while(currL > first)
-        {
-            sum+=arr[currL-1];
-            currL--;
-        }
- 
-        while(currR <= last)
-        {
-            sum+=arr[currR];
-            currR++;
-        }
- 
-        while(currR > last+1)
-        {
-            sum-=arr[currR-1];
-            currR--;
-        }
-        ans[qur[i].IND]=sum;
-    }
+
+void add(int position) {
+	cnt[a[position]]++;
+	if(cnt[a[position]] == 1) {
+		answer++;
+	}
 }
- 
-int main()
-{
-    scanf("%lld%lld",&n,&m);
-    for(LL i=0;i<n;i++)scanf("%lld",&arr[i]);
-    for(LL i=0;i<m;i++)
-    {
-        LL u,v;
-        scanf("%lld%lld",&u,&v);
-        qur.push_back(query(u,v,i));
-    }
- 
-    MO();
-    for(LL i=0;i<m;i++) printf("%lld\n",ans[i]);
-    return 0;
+
+void remove(int position) {
+	cnt[a[position]]--;
+	if(cnt[a[position]] == 0) {
+		answer--;
+	}
+}
+
+int main() {
+	int n;
+	scanf("%d", &n);
+	for(int i=0; i<n; i++)
+		scanf("%d", &a[i]);
+
+	int m;
+	scanf("%d", &m);
+	for(int i=0; i<m; i++) {
+		scanf("%d%d", &q[i].L, &q[i].R);
+		q[i].L--; q[i].R--;
+		q[i].i = i;
+	}
+
+	sort(q, q + m, cmp);
+
+	int currentL = 0, currentR = 0;
+	for(int i=0; i<m; i++) {
+		int L = q[i].L, R = q[i].R;
+		while(currentL < L) {
+			remove(currentL);
+			currentL++;
+		}
+		while(currentL > L) {
+			add(currentL-1);
+			currentL--;
+		}
+		while(currentR <= R) {
+			add(currentR);
+			currentR++;
+		}
+		while(currentR > R+1) {
+			remove(currentR-1);
+			currentR--;
+		}
+		ans[q[i].i] = answer;
+	}
+
+	for(int i=0; i<m; i++)
+		printf("%d\n", ans[i]);
 }
