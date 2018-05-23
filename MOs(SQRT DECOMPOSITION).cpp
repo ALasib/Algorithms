@@ -51,25 +51,13 @@ int main() {
 
 	sort(q, q + m, cmp);
 
-	int currentL = 0, currentR = 0;
+	int l=0, r=-1;
 	for(int i=0; i<m; i++) {
 		int L = q[i].L, R = q[i].R;
-		while(currentL < L) {
-			remove(currentL);
-			currentL++;
-		}
-		while(currentL > L) {
-			add(currentL-1);
-			currentL--;
-		}
-		while(currentR <= R) {
-			add(currentR);
-			currentR++;
-		}
-		while(currentR > R+1) {
-			remove(currentR-1);
-			currentR--;
-		}
+		while(l>L) add(--l);
+		while(r<R) add(++r);
+		while(l<L) remove(l++);
+		while(r>R) remove(r--);
 		ans[q[i].i] = answer;
 	}
 
