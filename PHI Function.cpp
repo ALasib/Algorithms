@@ -46,7 +46,7 @@ int main()
             {
 		prime.push_back(i);
 	    }
-    }
+        }
 
     for(i=0;i<=MAX;i++)
         ans[i]=i;
