@@ -1,3 +1,4 @@
+//Algorithm used: Sieve + PHI function 
 #include<stdio.h>
 #include<math.h>
 #include<string.h>
@@ -9,7 +10,7 @@ bool isprime[MAX+5];
 unsigned long long ans[MAX+5];
 vector<int>prime;
 
-void seive()
+void sieve()
 {
     int  i,j,x;
     x = sqrt(MAX);
@@ -37,14 +38,14 @@ int main()
     unsigned long long a,b,i,j;
 
     memset(isprime,true,sizeof(isprime));
-    seive();
+    sieve();
 
     for ( i = 2; i <= MAX; i++)
         {
-		if(isprime[i])
+	    if(isprime[i])
             {
-			prime.push_back(i);
-		}
+		prime.push_back(i);
+	    }
     }
 
     for(i=0;i<=MAX;i++)
