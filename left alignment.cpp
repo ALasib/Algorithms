@@ -1,3 +1,4 @@
+//Also try middle and right alignment. This is a famous interview question
 #include<bits/stdc++.h>
 
 using namespace std;
